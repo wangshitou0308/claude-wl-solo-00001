@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>木刻套色 · 定位试算</title>
+<style>
+:root{
+  --paper:#f5f0e6; --card:#fffdf8; --ink:#2d2822; --muted:#8b8172;
+  --line:#e3dac8; --base:#2456a6; --color:#c8432b; --ok:#33704a; --warn:#b3261e;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5}
+header{padding:16px 24px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;background:var(--card)}
+header h1{margin:0;font-size:20px;letter-spacing:3px;font-family:Georgia,"Songti SC","SimSun",serif}
+header .sub{color:var(--muted);font-size:13px}
+main{display:grid;grid-template-columns:400px minmax(0,1fr);gap:16px;padding:16px 24px 32px;max-width:1280px;margin:0 auto}
+@media (max-width:980px){main{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:15px;letter-spacing:1px}
+.card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap}
+.card-head h2{margin:0}
+.plate{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.plate:last-child{margin-bottom:0}
+.plate-title{font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.dot.base{background:var(--base)} .dot.color{background:var(--color)}
+.hole-row{display:grid;grid-template-columns:40px 1fr 1fr;gap:8px;align-items:center;margin:6px 0}
+.hole-row>span{color:var(--muted)}
+.hole-row label{display:flex;align-items:center;gap:4px;color:var(--muted);font-size:12px}
+input[type=number]{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font:inherit;background:#fff;color:var(--ink)}
+input:focus{outline:2px solid #c9b98f;outline-offset:0}
+.btn{border:1px solid var(--line);background:#fff;border-radius:6px;padding:6px 12px;font:inherit;cursor:pointer;color:var(--ink)}
+.btn:hover{background:#f3ecdd}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#463f35}
+.ex-btns{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.ex-desc{font-size:12px;color:var(--muted);min-height:18px}
+.status{border-radius:8px;padding:8px 12px;margin-bottom:10px;font-size:13px;display:none}
+.status.show{display:block}
+.status.ok{background:#e7f2e9;color:var(--ok);border:1px solid #cfe4d4}
+.status.warn{background:#fbe9e7;color:var(--warn);border:1px solid #f2cfcb}
+.status.info{background:#f0ede4;color:#6b6353;border:1px solid var(--line)}
+.res-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.res-row:last-of-type{border-bottom:none}
+.res-row span{color:var(--muted);white-space:nowrap}
+.res-row b{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.note{font-size:12px;color:var(--muted);margin-top:8px}
+canvas{width:100%;height:480px;display:block;background:#fff;border:1px solid var(--line);border-radius:10px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}
+.legend i{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px}
+.rec-list{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
+.rec-list li{position:relative;border:1px solid var(--line);border-radius:8px;padding:8px 36px 8px 12px;margin-bottom:8px;cursor:pointer;background:#fff}
+.rec-list li:hover{border-color:#c9b98f}
+.rec-list li.cur{border-color:var(--ink);box-shadow:inset 3px 0 0 var(--ink)}
+.rec-list li.rec-empty{border:none;cursor:default;color:var(--muted);font-size:13px;background:none;padding:4px 2px}
+.rec-name{font-weight:600}
+.rec-time{color:var(--muted);font-size:12px;margin-left:8px}
+.rec-sum{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.rec-del{position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
+.rec-del:hover{color:var(--warn);background:#fbe9e7}
+footer{color:var(--muted);font-size:12px;padding:0 24px 24px;max-width:1280px;margin:0 auto}
+</style>
+</head>
+<body>
+<header>
+  <h1>木刻套色 · 定位试算</h1>
+  <span class="sub">仅平移＋旋转的刚性校准：色版孔 1 对齐底版孔 1，再绕该点旋转至两孔连线同向，不做任何缩放。</span>
+</header>
+<main>
+  <div>
+    <div class="card">
+      <h2>孔位坐标 <span style="font-weight:400;color:var(--muted);font-size:12px">（同一平面坐标系，单位自定，如 mm）</span></h2>
+      <div class="plate">
+        <div class="plate-title"><span class="dot base"></span>底版（基准，固定不动）</div>
+        <div class="hole-row"><span>孔 1</span><label>X<input type="number" step="any" id="a1x"></label><label>Y<input type="number" step="any" id="a1y"></label></div>
+        <div class="hole-row"><span>孔 2</span><label>X<input type="number" step="any" id="a2x"></label><label>Y<input type="number" step="any" id="a2y"></label></div>
+      </div>
+      <div class="plate">
+        <div class="plate-title"><span class="dot color"></span>色版（待校准）</div>
+        <div class="hole-row"><span>孔 1</span><label>X<input type="number" step="any" id="b1x"></label><label>Y<input type="number" step="any" id="b1y"></label></div>
+        <div class="hole-row"><span>孔 2</span><label>X<input type="number" step="any" id="b2x"></label><label>Y<input type="number" step="any" id="b2y"></label></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>示例</h2>
+      <div class="ex-btns">
+        <button class="btn" data-ex="0">① 纯平移</button>
+        <button class="btn" data-ex="1">② 旋转 90°</button>
+        <button class="btn" data-ex="2">③ 孔距不同</button>
+      </div>
+      <div class="ex-desc" id="exDesc">点击示例按钮载入对应坐标，观察定位结果。</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>试印记录</h2><button class="btn primary" id="saveBtn">保存当前为记录</button></div>
+      <ul class="rec-list" id="recList"></ul>
+    </div>
+  </div>
+  <div>
+    <div class="card">
+      <h2>校准结果</h2>
+      <div class="status" id="statusMsg"></div>
+      <div class="res-row"><span>平移量（先平移）</span><b id="rT">—</b></div>
+      <div class="res-row"><span>旋转角（绕底版孔 1）</span><b id="rR">—</b></div>
+      <div class="res-row"><span>孔距（底版 / 色版）</span><b id="rD">—</b></div>
+      <div class="res-row"><span>第二孔剩余偏差</span><b id="rDev">—</b></div>
+      <div class="note" id="rNote"></div>
+    </div>
+    <div class="card">
+      <h2>画布</h2>
+      <canvas id="cv"></canvas>
+      <div class="legend">
+        <span><i style="background:#2456a6"></i>底版孔位与连线</span>
+        <span><i style="background:#a89f92"></i>色版原始位置</span>
+        <span><i style="background:#c8432b"></i>色版校准后位置</span>
+        <span><i style="background:#3d7a52"></i>平移矢量</span>
+        <span><i style="background:#d23c28"></i>剩余偏差</span>
+      </div>
+    </div>
+  </div>
+</main>
+<footer>方法：刚性变换（平移＋旋转），不缩放。若任一版的两孔重合则无法定向；若两版孔距不同，第二孔会留下刚性变换无法消除的偏差。数据保存在本浏览器 localStorage，刷新后自动恢复记录与当前选择。</footer>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const FIELDS = ['a1x','a1y','a2x','a2y','b1x','b1y','b2x','b2y'];
+const EPS = 1e-9;
+const LS_REC = 'woodcut.reg.records.v1';
+const LS_CUR = 'woodcut.reg.current.v1';
+const C = {base:'#2456a6', color:'#c8432b', ghost:'#a89f92', trans:'#3d7a52', dev:'#d23c28', arc:'#7a6c4f'};
+
+const EXAMPLES = [
+  {name:'示例一 · 纯平移',
+   desc:'两版孔距相同、方向相同，仅整体错开：平移 Δ(30, -40)，旋转 0°，剩余偏差 0。',
+   v:{a1x:50, a1y:50, a2x:170, a2y:50, b1x:20, b1y:90, b2x:140, b2y:90}},
+  {name:'示例二 · 旋转 90°',
+   desc:'色版相对底版横躺了 90°：平移 Δ(50, 20)，逆时针旋转 90°，剩余偏差 0。',
+   v:{a1x:80, a1y:60, a2x:80, a2y:180, b1x:30, b1y:40, b2x:150, b2y:40}},
+  {name:'示例三 · 孔距不同',
+   desc:'色版孔距 120、底版孔距 130：方向可对齐，但第二孔留下 10 的偏差，刚性变换（不缩放）无法消除。',
+   v:{a1x:60, a1y:60, a2x:190, a2y:60, b1x:40, b1y:120, b2x:160, b2y:120}}
+];
+
+let records = [], currentId = null;
+const state = {inp:null, res:null};
+const cv = $('cv'), ctx = cv.getContext('2d');
+
+/* ---------- 计算（仅刚性变换：平移 + 旋转，无缩放） ---------- */
+function readInputs(){
+  const raw = {};
+  for(const f of FIELDS){
+    const s = $(f).value.trim();
+    const v = parseFloat(s);
+    if(s === '' || !isFinite(v)) return null;
+    raw[f] = v;
+  }
+  return {
+    a1:{x:raw.a1x, y:raw.a1y}, a2:{x:raw.a2x, y:raw.a2y},
+    b1:{x:raw.b1x, y:raw.b1y}, b2:{x:raw.b2x, y:raw.b2y},
+    raw
+  };
+}
+
+function compute(inp){
+  const va = {x:inp.a2.x-inp.a1.x, y:inp.a2.y-inp.a1.y};   // 底版孔1→孔2
+  const vb = {x:inp.b2.x-inp.b1.x, y:inp.b2.y-inp.b1.y};   // 色版孔1→孔2
+  const dA = Math.hypot(va.x, va.y), dB = Math.hypot(vb.x, vb.y);
+  if(dA < EPS || dB < EPS)
+    return {degenerate:true, dA, dB, baseDeg:dA<EPS, colorDeg:dB<EPS};
+  const t  = {x:inp.a1.x-inp.b1.x, y:inp.a1.y-inp.b1.y};   // 平移量：色版孔1 → 底版孔1
+  const angA = Math.atan2(va.y, va.x), angB = Math.atan2(vb.y, vb.x);
+  const phi  = angA - angB;                                 // 绕底版孔1的旋转角
+  const c = Math.cos(phi), s = Math.sin(phi);
+  // 变换：p' = a1 + R(phi)·(p - b1)，长度保持不变（|R·vb| = |vb| = dB）
+  const b2p = {x:inp.a1.x + c*vb.x - s*vb.y, y:inp.a1.y + s*vb.x + c*vb.y};
+  const dev = {x:b2p.x-inp.a2.x, y:b2p.y-inp.a2.y};         // 第二孔剩余偏差
+  const d = Math.hypot(dev.x, dev.y);
+  let deg = phi*180/Math.PI;
+  deg = ((deg+180)%360+360)%360-180;
+  if(Math.abs(deg+180) < 1e-12) deg = 180;
+  return {degenerate:false, t, phi, deg, b2p, dev, d, dA, dB, angA, angB};
+}
+
+/* ---------- 结果显示 ---------- */
+function fmt(n, d=2){
+  if(!isFinite(n)) return '—';
+  if(Math.abs(n) < 1e-12) n = 0;
+  let s = n.toFixed(d);
+  if(s.includes('.')) s = s.replace(/0+$/,'').replace(/\.$/,'');
+  return s;
+}
+function setStatus(kind, msg){
+  const el = $('statusMsg');
+  el.className = 'status show ' + kind;
+  el.textContent = msg;
+}
+function render(){
+  const inp = readInputs();
+  state.inp = inp;
+  state.res = inp ? compute(inp) : null;
+  if(!inp){
+    setStatus('info', '请完整输入底版与色版各两处孔位坐标。');
+    $('rT').textContent = $('rR').textContent = $('rD').textContent = $('rDev').textContent = '—';
+    $('rNote').textContent = '';
+  }else if(state.res.degenerate){
+    const r = state.res;
+    const which = [r.baseDeg?'底版':null, r.colorDeg?'色版':null].filter(Boolean).join('、');
+    setStatus('warn', `无法定向：${which}的两孔重合，孔距为 0，连线没有方向。已保留输入，但不给出有效校准结果。`);
+    $('rT').textContent = $('rR').textContent = $('rDev').textContent = '—';
+    $('rD').textContent = `底版 ${fmt(r.dA)} ／ 色版 ${fmt(r.dB)}`;
+    $('rNote').textContent = '请把同一版上的两个孔错开一段距离。';
+  }else{
+    const r = state.res;
+    setStatus('ok', '校准有效：先将色版按平移量移动，再绕底版孔 1 旋转。');
+    $('rT').textContent = `Δx = ${fmt(r.t.x)}，Δy = ${fmt(r.t.y)}（|Δ| = ${fmt(Math.hypot(r.t.x, r.t.y))}）`;
+    $('rR').textContent = Math.abs(r.deg) < 1e-9 ? '0°（无需旋转）'
+      : `${r.deg > 0 ? '逆时针' : '顺时针'} ${fmt(Math.abs(r.deg))}°`;
+    $('rD').textContent = `底版 ${fmt(r.dA)} ／ 色版 ${fmt(r.dB)}`;
+    $('rDev').textContent = `Δx = ${fmt(r.dev.x)}，Δy = ${fmt(r.dev.y)}（距离 ${fmt(r.d)}）`;
+    $('rNote').textContent = r.d < 1e-9
+      ? '两版孔距一致，刚性校准可完全对齐。'
+      : '剩余偏差来自两版孔距不同：只允许平移＋旋转、不缩放，这部分偏差无法消除。';
+  }
+  drawScene();
+}
+
+/* ---------- 画布 ---------- */
+function niceStep(raw){
+  const p = Math.pow(10, Math.floor(Math.log10(raw)));
+  const m = raw/p;
+  return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10)*p;
+}
+function line(p, q, color, dash, width=1.6){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = width;
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+  ctx.restore();
+}
+function arrowHead(x, y, ang, color, size=9){
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+  ctx.beginPath();
+  for(const s of [1,-1]){
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - size*Math.cos(ang + s*0.42), y - size*Math.sin(ang + s*0.42));
+  }
+  ctx.stroke();
+}
+function arrow(p, q, color, dash, width=1.6){
+  line(p, q, color, dash, width);
+  arrowHead(q.x, q.y, Math.atan2(q.y-p.y, q.x-p.x), color);
+}
+function hole(p, color, filled){
+  ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2);
+  if(filled){ ctx.fillStyle = color; ctx.fill(); }
+  ctx.lineWidth = 2; ctx.strokeStyle = color; ctx.stroke();
+}
+function ring(p, color){
+  ctx.beginPath(); ctx.arc(p.x, p.y, 10, 0, Math.PI*2);
+  ctx.lineWidth = 1.5; ctx.strokeStyle = color; ctx.stroke();
+}
+function label(txt, p, dx, dy, color){
+  ctx.font = '12px sans-serif';
+  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,253,248,.92)';
+  ctx.strokeText(txt, p.x+dx, p.y+dy);
+  ctx.fillStyle = color;
+  ctx.fillText(txt, p.x+dx, p.y+dy);
+}
+function centerText(txt, y, color){
+  ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillStyle = color;
+  ctx.fillText(txt, cv.clientWidth/2, y);
+  ctx.textAlign = 'left';
+}
+function drawScene(){
+  const W = cv.clientWidth, H = cv.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  const inp = state.inp, res = state.res;
+  if(!inp){ centerText('请输入完整的四处孔位坐标', H/2, '#8b8172'); return; }
+
+  const pts = [inp.a1, inp.a2, inp.b1, inp.b2];
+  if(res && !res.degenerate) pts.push(res.b2p);
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  for(const p of pts){
+    minX=Math.min(minX,p.x); minY=Math.min(minY,p.y);
+    maxX=Math.max(maxX,p.x); maxY=Math.max(maxY,p.y);
+  }
+  const pad = 48;
+  const bw = Math.max(maxX-minX, 1e-6), bh = Math.max(maxY-minY, 1e-6);
+  const k  = Math.min((W-2*pad)/bw, (H-2*pad)/bh);
+  const ox = (W-bw*k)/2 - minX*k, oy = (H-bh*k)/2 - minY*k;
+  const X = x => ox + x*k, Y = y => H - (oy + y*k);   // 数据坐标 y 向上
+  const P = p => ({x:X(p.x), y:Y(p.y)});
+
+  // 网格与坐标轴
+  const step = niceStep(Math.max(bw, bh)/6);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#eee7d6';
+  ctx.beginPath();
+  for(let gx = Math.floor(minX/step)*step; gx <= maxX+1e-9; gx += step){
+    ctx.moveTo(X(gx), Y(minY)); ctx.lineTo(X(gx), Y(maxY));
+  }
+  for(let gy = Math.floor(minY/step)*step; gy <= maxY+1e-9; gy += step){
+    ctx.moveTo(X(minX), Y(gy)); ctx.lineTo(X(maxX), Y(gy));
+  }
+  ctx.stroke();
+  ctx.strokeStyle = '#e0d6bf';
+  ctx.beginPath();
+  if(minX <= 0 && maxX >= 0){ ctx.moveTo(X(0), Y(minY)); ctx.lineTo(X(0), Y(maxY)); }
+  if(minY <= 0 && maxY >= 0){ ctx.moveTo(X(minX), Y(0)); ctx.lineTo(X(maxX), Y(0)); }
+  ctx.stroke();
+
+  const a1 = P(inp.a1), a2 = P(inp.a2), b1 = P(inp.b1), b2 = P(inp.b2);
+
+  // 平移矢量（色版孔1 原始位置 → 底版孔1）
+  if(res && !res.degenerate && Math.hypot(res.t.x, res.t.y) > EPS){
+    arrow(b1, a1, C.trans, [5,4]);
+    label('平移', {x:(b1.x+a1.x)/2, y:(b1.y+a1.y)/2}, 8, -8, C.trans);
+  }
+  // 色版原始位置（灰影）
+  line(b1, b2, C.ghost, [6,5], 1.5);
+  hole(b1, C.ghost, false); hole(b2, C.ghost, false);
+  label('色1（原）', b1, 9, -10, '#8a8175');
+  label('色2（原）', b2, 9, -10, '#8a8175');
+  // 底版（基准）
+  line(a1, a2, C.base, null, 2.5);
+  hole(a1, C.base, true); hole(a2, C.base, true);
+  label('底1', a1, -6, -14, C.base);
+  label('底2', a2, 9, -12, C.base);
+
+  if(res && res.degenerate){
+    centerText('两孔重合，无法定向', 22, C.warn);
+    return;
+  }
+  if(!res) return;
+
+  const b2p = P(res.b2p);
+  // 旋转角弧线（在底版孔1处，由色版原方向 → 底版方向）
+  if(Math.abs(res.deg) > 1e-9){
+    const r0 = 32;
+    ctx.strokeStyle = C.arc; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(a1.x, a1.y, r0, -res.angB, -res.angA, res.deg > 0);
+    ctx.stroke();
+    const ea = -res.angA;
+    const ex = a1.x + r0*Math.cos(ea), ey = a1.y + r0*Math.sin(ea);
+    arrowHead(ex, ey, res.deg > 0 ? ea - Math.PI/2 : ea + Math.PI/2, C.arc, 7);
+    const mid = (res.angA + res.angB)/2;
+    label(`${fmt(res.deg)}°`,
+      {x:a1.x + (r0+16)*Math.cos(mid), y:a1.y - (r0+16)*Math.sin(mid)}, -10, 4, C.arc);
+  }
+  // 色版校准后位置（红）
+  line(a1, b2p, C.color, [7,5], 2);
+  ring(a1, C.color);                       // 色1′ 与底1 重合
+  hole(b2p, C.color, false);
+  label('底1＝色1′', a1, 10, 18, C.color);
+  label('色2′', b2p, 9, 16, C.color);
+  // 第二孔剩余偏差
+  if(res.d > 1e-9){
+    arrow(a2, b2p, C.dev, null, 2.5);
+    label(`剩余偏差 ${fmt(res.d)}`, {x:(a2.x+b2p.x)/2, y:(a2.y+b2p.y)/2}, 8, 16, C.dev);
+  }
+}
+function fitCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  cv.width  = Math.round(cv.clientWidth  * dpr);
+  cv.height = Math.round(cv.clientHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawScene();
+}
+
+/* ---------- 试印记录（localStorage 持久化） ---------- */
+function persist(){
+  try{
+    localStorage.setItem(LS_REC, JSON.stringify(records));
+    localStorage.setItem(LS_CUR, JSON.stringify(currentId));
+  }catch(e){/* 隐私模式等场景下降级为不持久化 */}
+}
+function loadPersist(){
+  try{
+    records  = JSON.parse(localStorage.getItem(LS_REC)) || [];
+    currentId = JSON.parse(localStorage.getItem(LS_CUR));
+  }catch(e){ records = []; currentId = null; }
+  if(!Array.isArray(records)) records = [];
+}
+function fmtTime(t){
+  const d = new Date(t), p = n => String(n).padStart(2,'0');
+  return `${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function summarize(res){
+  if(!res || res.degenerate) return '无法定向';
+  return `Δ(${fmt(res.t.x)}, ${fmt(res.t.y)}) · φ ${fmt(res.deg)}° · 偏差 ${fmt(res.d)}`;
+}
+function applyInputs(raw){
+  for(const f of FIELDS) $(f).value = raw[f];
+}
+function renderRecords(){
+  const ul = $('recList');
+  ul.innerHTML = '';
+  if(!records.length){
+    const li = document.createElement('li');
+    li.className = 'rec-empty';
+    li.textContent = '暂无记录：调好坐标后点击「保存当前为记录」。';
+    ul.appendChild(li);
+    return;
+  }
+  for(const rec of records){
+    const li = document.createElement('li');
+    if(rec.id === currentId) li.classList.add('cur');
+    const name = document.createElement('span'); name.className = 'rec-name'; name.textContent = rec.name;
+    const time = document.createElement('span'); time.className = 'rec-time'; time.textContent = fmtTime(rec.time);
+    const sum  = document.createElement('div');  sum.className  = 'rec-sum';  sum.textContent  = rec.summary;
+    const del  = document.createElement('button'); del.className = 'rec-del'; del.title = '删除记录'; del.textContent = '×';
+    const head = document.createElement('div');
+    head.appendChild(name); head.appendChild(time);
+    li.appendChild(head); li.appendChild(sum); li.appendChild(del);
+    li.addEventListener('click', e => {
+      if(e.target === del) return;
+      currentId = rec.id;
+      applyInputs(rec.inputs);
+      persist(); render(); renderRecords();
+      setStatus('info', `已载入「${rec.name}」，可继续修改坐标。`);
+    });
+    del.addEventListener('click', () => {
+      records = records.filter(r => r.id !== rec.id);
+      if(currentId === rec.id) currentId = null;
+      persist(); renderRecords();
+    });
+    ul.appendChild(li);
+  }
+}
+function saveRecord(){
+  const inp = readInputs();
+  if(!inp){ setStatus('warn', '坐标不完整，无法保存记录。'); return; }
+  const res = compute(inp);
+  const rec = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+    name: `试印记录 ${records.length + 1}`,
+    time: Date.now(),
+    inputs: inp.raw,
+    summary: summarize(res)
+  };
+  records.push(rec);
+  currentId = rec.id;
+  persist(); renderRecords();
+  setStatus('ok', `已保存「${rec.name}」。`);
+}
+
+/* ---------- 初始化 ---------- */
+loadPersist();
+const cur = records.find(r => r.id === currentId);
+applyInputs(cur ? cur.inputs : EXAMPLES[0].v);
+FIELDS.forEach(f => $(f).addEventListener('input', render));
+document.querySelectorAll('[data-ex]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const ex = EXAMPLES[+btn.dataset.ex];
+    applyInputs(ex.v);
+    $('exDesc').textContent = ex.desc;
+    render();
+  });
+});
+$('saveBtn').addEventListener('click', saveRecord);
+window.addEventListener('resize', fitCanvas);
+fitCanvas();
+render();
+renderRecords();
+</script>
+</body>
+</html>
